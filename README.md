@@ -9,7 +9,7 @@
 ### 1. Sentinel Full Architecture Map
 A complete interactive map of every component in Microsoft Sentinel — from log sources through data connectors, Log Analytics Workspace, the SIEM layer, and response automation.
 
-🔗 **[View Live Diagram →](./diagrams/sentinel-architecture.html)**
+🔗 **[View Live Diagram →](./diagrams/sentinel-diagram.html)**
 
 ---
 
