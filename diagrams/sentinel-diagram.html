@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Microsoft Sentinel Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #070d1a;
+    --panel: #0d1625;
+    --border: #1a2d4a;
+    --accent: #00b4d8;
+    --accent2: #0077b6;
+    --green: #06d6a0;
+    --orange: #f4a261;
+    --red: #e63946;
+    --purple: #7b2d8b;
+    --yellow: #ffd166;
+    --text: #ccd6f6;
+    --dim: #607b96;
+    --glow: rgba(0,180,216,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+  }
+  .header-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.1s forwards;
+  }
+  .header h1 {
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.2s forwards;
+  }
+  .header h1 span { color: var(--accent); }
+  .header-sub {
+    font-size: 13px;
+    color: var(--dim);
+    margin-top: 6px;
+    opacity: 0;
+    animation: fadeUp 0.5s 0.3s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Flow arrow */
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 6px 0;
+    opacity: 0;
+    animation: fadeUp 0.4s 0.8s forwards;
+  }
+  .flow-arrow .arrow-line {
+    width: 2px;
+    height: 28px;
+    background: linear-gradient(to bottom, var(--accent2), var(--accent));
+  }
+  .flow-arrow .arrow-head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--accent);
+  }
+  .flow-arrow .arrow-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 4px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Section wrappers */
+  .section {
+    opacity: 0;
+    animation: fadeUp 0.5s forwards;
+  }
+  .section:nth-child(1) { animation-delay: 0.4s; }
+  .section:nth-child(2) { animation-delay: 0.55s; }
+  .section:nth-child(3) { animation-delay: 0.7s; }
+  .section:nth-child(4) { animation-delay: 0.85s; }
+  .section:nth-child(5) { animation-delay: 1.0s; }
+  .section:nth-child(6) { animation-delay: 1.15s; }
+  .section:nth-child(7) { animation-delay: 1.3s; }
+
+  .section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--dim);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  /* Zone containers */
+  .zone {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    background: var(--panel);
+    position: relative;
+  }
+  .zone-label {
+    position: absolute;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    padding: 2px 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* Card grid */
+  .card-grid {
+    display: grid;
+    gap: 10px;
+  }
+  .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .card-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+  /* Component card */
+  .card {
+    border-radius: 8px;
+    padding: 10px 12px;
+    border: 1px solid;
+    position: relative;
+    cursor: default;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .card-icon { font-size: 18px; margin-bottom: 4px; }
+  .card-name {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .card-desc {
+    font-size: 10px;
+    line-height: 1.4;
+    opacity: 0.7;
+  }
+  .card-tag {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Color themes */
+  .c-blue { border-color: #1a3d6e; background: #0a1e38; color: #7ec8e3; }
+  .c-blue .card-name { color: #90d5f0; }
+  .c-blue .card-tag { background: #0d2a4a; color: var(--accent); }
+
+  .c-green { border-color: #0d4a35; background: #071f17; color: #8ee8c8; }
+  .c-green .card-name { color: #06d6a0; }
+  .c-green .card-tag { background: #0a2e22; color: var(--green); }
+
+  .c-orange { border-color: #5a3010; background: #2a1608; color: #f4c08a; }
+  .c-orange .card-name { color: #f4a261; }
+  .c-orange .card-tag { background: #3a1f0a; color: var(--orange); }
+
+  .c-purple { border-color: #3d1a55; background: #1e0d2a; color: #c78be8; }
+  .c-purple .card-name { color: #d4a0f0; }
+  .c-purple .card-tag { background: #2a1040; color: #c78be8; }
+
+  .c-red { border-color: #5a1a20; background: #2a0d10; color: #f08090; }
+  .c-red .card-name { color: #f06070; }
+  .c-red .card-tag { background: #3a1015; color: var(--red); }
+
+  .c-yellow { border-color: #5a4500; background: #2a2000; color: #f0d080; }
+  .c-yellow .card-name { color: #ffd166; }
+  .c-yellow .card-tag { background: #3a2c00; color: var(--yellow); }
+
+  .c-teal { border-color: #0a4a5a; background: #051d24; color: #80d8e8; }
+  .c-teal .card-name { color: #40c8e0; }
+  .c-teal .card-tag { background: #082530; color: #40c8e0; }
+
+  /* Central Sentinel box */
+  .sentinel-core {
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    padding: 20px;
+    background: linear-gradient(135deg, #050e20 0%, #0a1830 100%);
+    box-shadow: 0 0 40px rgba(0,180,216,0.12), inset 0 0 40px rgba(0,180,216,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .sentinel-core::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(0,180,216,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .sentinel-core-title {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .sentinel-core-title .badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #00b4d8, #0077b6);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 6px 20px;
+    border-radius: 20px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 4px 20px rgba(0,180,216,0.4);
+  }
+  .sentinel-core-sub {
+    font-size: 10px;
+    color: var(--dim);
+    text-align: center;
+    margin-top: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.1em;
+  }
+
+  /* LAW special box */
+  .law-box {
+    border: 1px solid #1a4060;
+    border-radius: 10px;
+    background: #050f1a;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .law-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .law-title::before {
+    content: '';
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 24px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    opacity: 0;
+    animation: fadeUp 0.5s 1.5s forwards;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Tooltip */
+  .card[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0d2040;
+    border: 1px solid var(--accent2);
+    color: var(--text);
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    font-family: 'Exo 2', sans-serif;
+    font-weight: 400;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .card-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid.cols-5 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .card-grid.cols-2 { grid-template-columns: 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr; }
+  }
+
+  .pulse {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(6,214,160,0.5);
+    animation: pulse 2s infinite;
+    margin-right: 5px;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(6,214,160,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(6,214,160,0); }
+    100% { box-shadow: 0 0 0 0 rgba(6,214,160,0); }
+  }
+
+  .horiz-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .horiz-arrow {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    flex-direction: column;
+  }
+  .horiz-arrow-line {
+    width: 20px; height: 2px;
+    background: linear-gradient(to right, var(--accent2), var(--accent));
+  }
+  .horiz-arrow-head {
+    width: 0; height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 7px solid var(--accent);
+    margin-left: -1px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">ARCHITECTURE REFERENCE DIAGRAM</div>
+    <h1>Microsoft <span>Sentinel</span></h1>
+    <div class="header-sub">End-to-end data flow · All components · Front &amp; back</div>
+  </div>
+
+  <!-- LAYER 1: DATA SOURCES -->
+  <div class="section">
+    <div class="section-title">LAYER 1 — DATA SOURCES (What generates logs)</div>
+    <div class="zone" style="border-color:#1a3d6e;">
+      <div class="zone-label" style="color:#7ec8e3;">RAW LOG SOURCES</div>
+      <div class="card-grid cols-5">
+        <div class="card c-blue" data-tip="VMs, Servers, Desktops">
+          <div class="card-icon">🖥️</div>
+          <div class="card-name">Endpoints & VMs</div>
+          <div class="card-desc">Windows, Linux, Azure VMs, on-prem servers</div>
+          <div class="card-tag">COMPUTE</div>
+        </div>
+        <div class="card c-blue" data-tip="NSGs, Firewalls, VPNs">
+          <div class="card-icon">🌐</div>
+          <div class="card-name">Network Devices</div>
+          <div class="card-desc">Firewalls, NSGs, VPN Gateways, routers</div>
+          <div class="card-tag">NETWORK</div>
+        </div>
+        <div class="card c-blue" data-tip="Azure AD sign-in & audit logs">
+          <div class="card-icon">🔑</div>
+          <div class="card-name">Azure AD / Entra ID</div>
+          <div class="card-desc">Sign-in logs, audit logs, risky users</div>
+          <div class="card-tag">IDENTITY</div>
+        </div>
+        <div class="card c-blue" data-tip="Office 365, Teams, Exchange">
+          <div class="card-icon">📧</div>
+          <div class="card-name">Microsoft 365</div>
+          <div class="card-desc">Exchange, Teams, SharePoint, Defender</div>
+          <div class="card-tag">SaaS</div>
+        </div>
+        <div class="card c-blue" data-tip="3rd party tools via API/Syslog">
+          <div class="card-icon">🔌</div>
+          <div class="card-name">3rd Party Apps</div>
+          <div class="card-desc">Palo Alto, Okta, AWS, GCP, custom apps</div>
+          <div class="card-tag">EXTERNAL</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="flow-arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <div class="arrow-label">logs &amp; events ingested via connectors</div>
+  </div>
+
+  <!-- LAYER 2: DATA CONNECTORS -->
+  <div class="section">
+    <div class="section-title">LAYER 2 — DATA CONNECTORS (The ingestion bridge)</div>
+    <div class="zone" style="border-color:#0d4a35;">
+      <div class="zone-label" style="color:#06d6a0;">DATA CONNECTORS</div>
+      <div class="card-grid cols-4">
+        <div class="card c-green" data-tip="Native 1-click connectors for Azure services">
+          <div class="card-icon">⚡</div>
+          <div class="card-name">Microsoft Native Connectors</div>
+          <div class="card-desc">Azure AD, Defender, M365, Activity Logs — 1-click enable</div>
+          <div class="card-tag">BUILT-IN</div>
+        </div>
+        <div class="card c-green" data-tip="Common Event Format over Syslog">
+          <div class="card-icon">📡</div>
+          <div class="card-name">CEF / Syslog</div>
+          <div class="card-desc">Linux agent forwards Syslog/CEF from firewalls, appliances</div>
+          <div class="card-tag">AGENT-BASED</div>
+        </div>
+        <div class="card c-green" data-tip="REST API log ingestion">
+          <div class="card-icon">🔗</div>
+          <div class="card-name">REST API / DCR</div>
+          <div class="card-desc">Data Collection Rules push custom log formats via HTTPS</div>
+          <div class="card-tag">CUSTOM</div>
+        </div>
+        <div class="card c-green" data-tip="Partner connectors from marketplace">
+          <div class="card-icon">🛍️</div>
+          <div class="card-name">Content Hub Connectors</div>
+          <div class="card-desc">AWS, GCP, Okta, Palo Alto, Cisco — from Sentinel marketplace</div>
+          <div class="card-tag">MARKETPLACE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="flow-arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <div class="arrow-label">stored &amp; indexed in</div>
+  </div>
+
+  <!-- LAYER 3: LOG ANALYTICS WORKSPACE -->
+  <div class="section">
+    <div class="section-title">LAYER 3 — LOG ANALYTICS WORKSPACE (The database engine)</div>
+    <div class="zone" style="border-color:#1a4060; background: #050f1a;">
+      <div class="zone-label" style="color: var(--accent);">LOG ANALYTICS WORKSPACE (LAW)</div>
+      <div class="law-box">
+        <div class="law-title">Core Storage Engine — All logs land here first</div>
+        <div class="card-grid cols-3">
+          <div class="card c-teal" data-tip="Structured log tables per data type">
+            <div class="card-icon">📋</div>
+            <div class="card-name">Log Tables</div>
+            <div class="card-desc">SecurityEvent, SigninLogs, AzureActivity, CommonSecurityLog, Syslog...</div>
+            <div class="card-tag">TABLES</div>
+          </div>
+          <div class="card c-teal" data-tip="Query language for all log analysis">
+            <div class="card-icon">🔍</div>
+            <div class="card-name">KQL Query Engine</div>
+            <div class="card-desc">Kusto Query Language — search, filter, aggregate, join log data</div>
+            <div class="card-tag">KQL</div>
+          </div>
+          <div class="card c-teal" data-tip="Retention from 30 days to 7 years">
+            <div class="card-icon">🗄️</div>
+            <div class="card-name">Data Retention</div>
+            <div class="card-desc">Hot tier (interactive), Cold tier (archive) — cost-controlled retention</div>
+            <div class="card-tag">STORAGE</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-grid cols-2">
+        <div class="card c-teal" data-tip="Control what gets ingested and transformed">
+          <div class="card-icon">⚙️</div>
+          <div class="card-name">Data Collection Rules (DCR)</div>
+          <div class="card-desc">Filter, transform, and route data before it hits the workspace. Reduce cost by dropping noise.</div>
+          <div class="card-tag">TRANSFORM</div>
+        </div>
+        <div class="card c-teal" data-tip="Paid per GB ingested">
+          <div class="card-icon">💰</div>
+          <div class="card-name">Ingestion & Pricing</div>
+          <div class="card-desc">Pay-per-GB or Commitment Tiers. Basic Logs tier for high-volume, low-priority data.</div>
+          <div class="card-tag">BILLING</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="flow-arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <div class="arrow-label">Sentinel sits on top of LAW and adds SIEM/SOAR capabilities</div>
+  </div>
+
+  <!-- LAYER 4: SENTINEL CORE -->
+  <div class="section">
+    <div class="section-title">LAYER 4 — MICROSOFT SENTINEL (The SIEM + SOAR engine)</div>
+    <div class="sentinel-core">
+      <div class="sentinel-core-title">
+        <div class="badge">⚔️ MICROSOFT SENTINEL</div>
+        <div class="sentinel-core-sub"><span class="pulse"></span>SIEM · SOAR · THREAT INTELLIGENCE · AI/ML</div>
+      </div>
+      <div class="card-grid cols-3" style="margin-bottom:10px;">
+        <div class="card c-purple" data-tip="Rules that fire alerts from log data">
+          <div class="card-icon">📏</div>
+          <div class="card-name">Analytics Rules</div>
+          <div class="card-desc">Scheduled KQL queries, Microsoft rules, ML-based anomaly detection, NRT (near real-time)</div>
+          <div class="card-tag">DETECTION</div>
+        </div>
+        <div class="card c-purple" data-tip="Correlated security incidents">
+          <div class="card-icon">🚨</div>
+          <div class="card-name">Incidents</div>
+          <div class="card-desc">Alerts grouped into incidents. Assigned to analysts. Tracks investigation status.</div>
+          <div class="card-tag">TRIAGE</div>
+        </div>
+        <div class="card c-purple" data-tip="Visual investigation tool">
+          <div class="card-icon">🗺️</div>
+          <div class="card-name">Investigation Graph</div>
+          <div class="card-desc">Visual map of entities, alerts, and relationships for an incident</div>
+          <div class="card-tag">INVESTIGATE</div>
+        </div>
+        <div class="card c-purple" data-tip="Known IOCs matched against logs">
+          <div class="card-icon">🎯</div>
+          <div class="card-name">Threat Intelligence</div>
+          <div class="card-desc">IOC matching — IPs, domains, file hashes from MDTI and 3rd party TI feeds</div>
+          <div class="card-tag">TI MATCHING</div>
+        </div>
+        <div class="card c-purple" data-tip="Entities like users, IPs, hosts">
+          <div class="card-icon">🧩</div>
+          <div class="card-name">Entity Behavior (UEBA)</div>
+          <div class="card-desc">Builds behavioral baselines for users, hosts, IPs. Scores anomalies automatically.</div>
+          <div class="card-tag">UEBA</div>
+        </div>
+        <div class="card c-purple" data-tip="Proactive threat hunting">
+          <div class="card-icon">🔭</div>
+          <div class="card-name">Hunting</div>
+          <div class="card-desc">Pre-built and custom KQL hunting queries. Livestream. Bookmark findings.</div>
+          <div class="card-tag">HUNT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="flow-arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <div class="arrow-label">automated response &amp; analyst workflow</div>
+  </div>
+
+  <!-- LAYER 5: SOAR / AUTOMATION -->
+  <div class="section">
+    <div class="section-title">LAYER 5 — SOAR & AUTOMATION (Respond automatically)</div>
+    <div class="zone" style="border-color:#5a3010;">
+      <div class="zone-label" style="color:var(--orange);">AUTOMATION & RESPONSE</div>
+      <div class="card-grid cols-4">
+        <div class="card c-orange" data-tip="Automated playbooks triggered by incidents">
+          <div class="card-icon">🤖</div>
+          <div class="card-name">Automation Rules</div>
+          <div class="card-desc">Auto-assign, auto-close, or trigger playbooks based on incident conditions</div>
+          <div class="card-tag">ORCHESTRATE</div>
+        </div>
+        <div class="card c-orange" data-tip="Logic Apps workflows for response">
+          <div class="card-icon">▶️</div>
+          <div class="card-name">Playbooks (Logic Apps)</div>
+          <div class="card-desc">Azure Logic Apps workflows — block IP, disable user, send Teams alert, create ticket</div>
+          <div class="card-tag">PLAYBOOK</div>
+        </div>
+        <div class="card c-orange" data-tip="Connect to external systems">
+          <div class="card-icon">🔄</div>
+          <div class="card-name">Logic App Connectors</div>
+          <div class="card-desc">ServiceNow, Jira, Slack, Teams, email — 400+ connectors available</div>
+          <div class="card-tag">INTEGRATE</div>
+        </div>
+        <div class="card c-orange" data-tip="AI-powered investigation assistance">
+          <div class="card-icon">🧠</div>
+          <div class="card-name">Microsoft Copilot for Security</div>
+          <div class="card-desc">AI assistant — summarize incidents, explain KQL, suggest remediation steps</div>
+          <div class="card-tag">AI/ML</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARROW -->
+  <div class="flow-arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+    <div class="arrow-label">analyst workbench &amp; reporting</div>
+  </div>
+
+  <!-- LAYER 6: ANALYST TOOLS -->
+  <div class="section">
+    <div class="section-title">LAYER 6 — ANALYST WORKBENCH (What analysts see and use daily)</div>
+    <div class="zone" style="border-color:#3d1a55;">
+      <div class="zone-label" style="color:#c78be8;">ANALYST FRONT-END TOOLS</div>
+      <div class="card-grid cols-4">
+        <div class="card c-purple" data-tip="Interactive visual dashboards">
+          <div class="card-icon">📊</div>
+          <div class="card-name">Workbooks</div>
+          <div class="card-desc">Azure Monitor Workbooks — custom dashboards, charts, visual reports from KQL</div>
+          <div class="card-tag">DASHBOARDS</div>
+        </div>
+        <div class="card c-purple" data-tip="Scheduled alert summaries">
+          <div class="card-icon">📬</div>
+          <div class="card-name">Watchlists</div>
+          <div class="card-desc">Upload CSV lists (VIP users, trusted IPs, asset inventory) to enrich alerts</div>
+          <div class="card-tag">ENRICH</div>
+        </div>
+        <div class="card c-purple" data-tip="Notebook-based investigation">
+          <div class="card-icon">📓</div>
+          <div class="card-name">Notebooks (Jupyter)</div>
+          <div class="card-desc">Python + KQL in Jupyter notebooks for advanced threat hunting and data science</div>
+          <div class="card-tag">ADVANCED</div>
+        </div>
+        <div class="card c-purple" data-tip="Content packages from marketplace">
+          <div class="card-icon">📦</div>
+          <div class="card-name">Content Hub</div>
+          <div class="card-desc">Install solution packs: connectors + rules + workbooks + playbooks bundled together</div>
+          <div class="card-tag">SOLUTIONS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 7: SUPPORTING SERVICES -->
+  <div class="section">
+    <div class="section-title">SUPPORTING AZURE SERVICES (Infrastructure Sentinel depends on)</div>
+    <div class="zone" style="border-color:#5a4500;">
+      <div class="zone-label" style="color:var(--yellow);">AZURE PLATFORM DEPENDENCIES</div>
+      <div class="card-grid cols-4">
+        <div class="card c-yellow" data-tip="Store secrets and API keys">
+          <div class="card-icon">🔐</div>
+          <div class="card-name">Azure Key Vault</div>
+          <div class="card-desc">Store connector API keys, playbook secrets, and credentials securely</div>
+          <div class="card-tag">SECRETS</div>
+        </div>
+        <div class="card c-yellow" data-tip="Control who can access Sentinel">
+          <div class="card-icon">👤</div>
+          <div class="card-name">Azure RBAC</div>
+          <div class="card-desc">Sentinel Reader, Responder, Contributor roles — control analyst permissions</div>
+          <div class="card-tag">ACCESS</div>
+        </div>
+        <div class="card c-yellow" data-tip="Long-term log archival">
+          <div class="card-icon">💾</div>
+          <div class="card-name">Azure Storage / ADX</div>
+          <div class="card-desc">Archive logs to Storage Account or Azure Data Explorer for long-term retention</div>
+          <div class="card-tag">ARCHIVE</div>
+        </div>
+        <div class="card c-yellow" data-tip="Track all changes">
+          <div class="card-icon">📝</div>
+          <div class="card-name">Azure Activity Log</div>
+          <div class="card-desc">Audit trail for all Sentinel config changes, rule edits, playbook runs</div>
+          <div class="card-tag">AUDIT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--dim); width:100%; text-align:center; margin-bottom:6px; letter-spacing:0.15em;">LAYER LEGEND</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a3d6e;"></div> Data Sources</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0d4a35;"></div> Data Connectors</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1a4060;"></div> Log Analytics Workspace</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3d1a55;"></div> Sentinel Core / Analyst Tools</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#5a3010;"></div> SOAR / Automation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#5a4500;"></div> Azure Platform Dependencies</div>
+    <div style="font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--dim); width:100%; text-align:center; margin-top:8px; letter-spacing:0.1em;">Hover over any card for more detail</div>
+  </div>
+
+</div>
+</body>
+</html>

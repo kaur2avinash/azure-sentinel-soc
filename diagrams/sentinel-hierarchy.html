@@ -1,1 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Microsoft Sentinel — Data Hierarchy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#070b12;--surface:#0d1321;--border:#1b2540;--text:#cdd6f4;--muted:#6b7fa8;--faint:#1e2a45;
+    --c1:#4fc3f7;--c2:#ab8df8;--c3:#4ade80;--c4:#fb923c;--c5:#f472b6;--c6:#fbbf24;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  header h1{font-size:clamp(15px,2.5vw,20px);font-weight:700;color:#eef2ff}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--c3);box-shadow:0 0 8px var(--c3);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  main{max-width:1000px;margin:0 auto;padding:32px 20px 48px}
+  .layer{opacity:0;transform:translateY(18px);animation:fadeUp .5s forwards}
+  .layer:nth-child(1){animation-delay:.1s}.layer:nth-child(2){animation-delay:.22s}
+  .layer:nth-child(3){animation-delay:.34s}.layer:nth-child(4){animation-delay:.46s}
+  .layer:nth-child(5){animation-delay:.58s}.layer:nth-child(6){animation-delay:.70s}
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+  .layer-inner{border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+  .layer-inner:hover{box-shadow:0 0 0 1px var(--accent,#333);border-color:var(--accent,#333)}
+  .layer-head{display:flex;align-items:center;gap:14px;padding:13px 20px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+  .layer-num{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.1em;min-width:26px}
+  .layer-title{font-size:14px;font-weight:700;color:var(--accent);flex:1}
+  .layer-subtitle{font-size:11px;color:var(--muted);font-style:italic}
+  .layer-toggle{font-size:13px;color:var(--muted);transition:transform .25s}
+  .layer-inner.open .layer-toggle{transform:rotate(180deg)}
+  .layer-body{display:none;padding:16px 20px;background:var(--bg)}
+  .layer-inner.open .layer-body{display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:border-color .2s,transform .2s,background .2s;cursor:default}
+  .card:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--surface));transform:translateY(-2px)}
+  .card-icon{font-size:20px;margin-bottom:6px}
+  .card-name{font-size:12px;font-weight:700;color:#eef2ff;margin-bottom:3px;line-height:1.3}
+  .card-desc{font-size:11px;color:var(--muted);line-height:1.5}
+  .flow-note{background:var(--faint);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:9px 14px;font-size:12px;color:var(--muted);line-height:1.6}
+  .flow-note strong{color:var(--accent)}
+  .arrow-connector{display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:2px;opacity:0;animation:fadeUp .4s forwards}
+  .arrow-connector:nth-child(2){animation-delay:.18s}.arrow-connector:nth-child(4){animation-delay:.30s}
+  .arrow-connector:nth-child(6){animation-delay:.42s}.arrow-connector:nth-child(8){animation-delay:.54s}
+  .arrow-connector:nth-child(10){animation-delay:.66s}
+  .arrow-line{width:2px;height:18px;background:linear-gradient(to bottom,var(--from-color,#333),var(--to-color,#333))}
+  .arrow-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+  .arrow-chevron{font-size:14px;line-height:1}
+  .key-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+  .key-table th{background:var(--faint);color:var(--accent);padding:6px 12px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--border)}
+  .key-table td{padding:6px 12px;border:1px solid var(--border);color:var(--text);vertical-align:top}
+  .key-table tr:nth-child(even) td{background:var(--faint)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:28px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+  .legend-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted)}
+  .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  footer{text-align:center;padding:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#2a3550;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="badge">Microsoft Sentinel — Data Hierarchy</div>
+    <h1>How Data Flows Through the Sentinel Stack</h1>
+  </div>
+  <div style="flex:1"></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="dot"></div>
+    <span style="font-size:11px;color:var(--c3);font-family:'IBM Plex Mono',monospace">Click any layer to expand</span>
+  </div>
+</header>
 
+<main>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c1)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">01</span>
+      <div><div class="layer-title">LOG SOURCES</div><div class="layer-subtitle">Where all data originates — every event, login, and alert</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">☁️</div><div class="card-name">Azure Resources</div><div class="card-desc">VMs, NSGs, Key Vault, Storage, Azure AD activity</div></div>
+        <div class="card"><div class="card-icon">📧</div><div class="card-name">Microsoft 365</div><div class="card-desc">Exchange, Teams, SharePoint, OneDrive, Defender for O365</div></div>
+        <div class="card"><div class="card-icon">🛡️</div><div class="card-name">Microsoft Defender</div><div class="card-desc">Defender for Endpoint, Identity, Cloud Apps</div></div>
+        <div class="card"><div class="card-icon">🖥️</div><div class="card-name">On-Premises</div><div class="card-desc">Windows / Linux servers, Active Directory, DNS</div></div>
+        <div class="card"><div class="card-icon">🌐</div><div class="card-name">Network Devices</div><div class="card-desc">Firewalls, routers, switches — Cisco, Palo Alto, Fortinet</div></div>
+        <div class="card"><div class="card-icon">🔗</div><div class="card-name">Third-Party / Cloud</div><div class="card-desc">AWS, GCP, SaaS apps, custom REST API sources</div></div>
+      </div>
+      <div class="flow-note"><strong>Key point:</strong> Sentinel is source-agnostic — it can ingest from virtually any platform as long as data reaches Log Analytics Workspace in a supported format.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <div class="arrow-label">raw logs and events</div>
+  <div class="arrow-line" style="--from-color:var(--c1);--to-color:var(--c2)"></div>
+  <div class="arrow-chevron" style="color:var(--c2)">▼</div>
+</div>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c2)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">02</span>
+      <div><div class="layer-title">DATA CONNECTORS</div><div class="layer-subtitle">The bridge — normalises and forwards data into Sentinel</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">🔌</div><div class="card-name">Built-in Connectors</div><div class="card-desc">1-click connectors for all Microsoft services and 200+ partners</div></div>
+        <div class="card"><div class="card-icon">📡</div><div class="card-name">CEF / Syslog</div><div class="card-desc">Common Event Format via Log Analytics Agent for network devices and Linux</div></div>
+        <div class="card"><div class="card-icon">🤖</div><div class="card-name">AMA / MMA Agent</div><div class="card-desc">Azure Monitor Agent installed on VMs and on-prem servers</div></div>
+        <div class="card"><div class="card-icon">🔄</div><div class="card-name">REST API / DCR</div><div class="card-desc">Data Collection Rules and custom log ingestion API for any source</div></div>
+        <div class="card"><div class="card-icon">⚡</div><div class="card-name">Logic App Connector</div><div class="card-desc">Custom ingestion pipelines using Azure Logic Apps for any REST source</div></div>
+      </div>
+      <div class="flow-note"><strong>Key point:</strong> Connectors normalise data into a common schema before it enters LAW. This is why one KQL query can work across multiple source types.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <div class="arrow-label">normalised and ingested</div>
+  <div class="arrow-line" style="--from-color:var(--c2);--to-color:var(--c3)"></div>
+  <div class="arrow-chevron" style="color:var(--c3)">▼</div>
+</div>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c3)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">03</span>
+      <div><div class="layer-title">LOG ANALYTICS WORKSPACE (LAW)</div><div class="layer-subtitle">The data store — all logs live here, queried via KQL</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">📋</div><div class="card-name">Log Tables</div><div class="card-desc">SecurityEvent, SigninLogs, OfficeActivity, CommonSecurityLog, Syslog...</div></div>
+        <div class="card"><div class="card-icon">🔍</div><div class="card-name">KQL Engine</div><div class="card-desc">Kusto Query Language — search, filter, join, aggregate across all tables</div></div>
+        <div class="card"><div class="card-icon">🗂️</div><div class="card-name">Data Retention</div><div class="card-desc">Hot tier (90 days default), Archive tier (up to 7 years)</div></div>
+        <div class="card"><div class="card-icon">📊</div><div class="card-name">Workbooks</div><div class="card-desc">Interactive dashboards built directly on top of LAW query results</div></div>
+      </div>
+      <table class="key-table">
+        <thead><tr><th>Table</th><th>What It Contains</th><th>Common Use</th></tr></thead>
+        <tbody>
+          <tr><td>SigninLogs</td><td>Azure AD authentication events</td><td>Impossible travel, brute force, MFA analysis</td></tr>
+          <tr><td>SecurityEvent</td><td>Windows security event IDs</td><td>Logon events 4624/4625, privilege use</td></tr>
+          <tr><td>OfficeActivity</td><td>M365 — email, SharePoint, Teams</td><td>Mail forwarding rules, file downloads</td></tr>
+          <tr><td>AzureActivity</td><td>Azure resource changes</td><td>Who changed what in your subscription</td></tr>
+          <tr><td>CommonSecurityLog</td><td>CEF-format logs from firewalls</td><td>Network threat detection</td></tr>
+          <tr><td>ThreatIntelligenceIndicator</td><td>IOCs — IPs, domains, hashes</td><td>Matching logs against known threats</td></tr>
+        </tbody>
+      </table>
+      <div class="flow-note" style="margin-top:12px"><strong>Splunk equivalent:</strong> LAW is Splunk's index + search head combined. KQL is your SPL. Tables are your sourcetypes.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <div class="arrow-label">Sentinel reads and analyses LAW data</div>
+  <div class="arrow-line" style="--from-color:var(--c3);--to-color:var(--c4)"></div>
+  <div class="arrow-chevron" style="color:var(--c4)">▼</div>
+</div>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c4)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">04</span>
+      <div><div class="layer-title">MICROSOFT SENTINEL — SIEM + SOAR</div><div class="layer-subtitle">The brain — detects threats, enriches context, raises incidents</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">⚠️</div><div class="card-name">Analytics Rules</div><div class="card-desc">Scheduled, NRT, Fusion, ML-based — run KQL on schedule, create alerts</div></div>
+        <div class="card"><div class="card-icon">🚨</div><div class="card-name">Incidents</div><div class="card-desc">Grouped alerts with investigation graph, entities, timeline, severity</div></div>
+        <div class="card"><div class="card-icon">📌</div><div class="card-name">Watchlists</div><div class="card-desc">CSV reference lists — VPN IPs, VIP users, known-good assets</div></div>
+        <div class="card"><div class="card-icon">🕵️</div><div class="card-name">Threat Intelligence</div><div class="card-desc">IOC feeds matched against all ingested logs in real time</div></div>
+        <div class="card"><div class="card-icon">👤</div><div class="card-name">UEBA</div><div class="card-desc">User and Entity Behaviour Analytics — baselines normal, flags deviations</div></div>
+        <div class="card"><div class="card-icon">🏹</div><div class="card-name">Hunting Queries</div><div class="card-desc">Proactive threat hunting using KQL across all historical data</div></div>
+        <div class="card"><div class="card-icon">📓</div><div class="card-name">Notebooks</div><div class="card-desc">Jupyter + Python for advanced investigation, ML, geolocation analysis</div></div>
+      </div>
+      <div class="flow-note"><strong>Internal flow:</strong> Analytics Rule fires → Alert created → Alerts grouped → <strong>Incident raised</strong> → Entities extracted (user, IP, host, URL) → Assigned to analyst → Investigation begins</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <div class="arrow-label">incident triggers response</div>
+  <div class="arrow-line" style="--from-color:var(--c4);--to-color:var(--c5)"></div>
+  <div class="arrow-chevron" style="color:var(--c5)">▼</div>
+</div>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c5)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">05</span>
+      <div><div class="layer-title">RESPONSE AND AUTOMATION</div><div class="layer-subtitle">What happens after a threat is confirmed</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">🎭</div><div class="card-name">Playbooks</div><div class="card-desc">Logic Apps triggered on incidents — automated response workflows</div></div>
+        <div class="card"><div class="card-icon">🤖</div><div class="card-name">Automation Rules</div><div class="card-desc">Auto-assign, triage, tag incidents, or trigger a playbook on creation</div></div>
+        <div class="card"><div class="card-icon">🔧</div><div class="card-name">SOAR Actions</div><div class="card-desc">Block IP, disable user, isolate device, send Teams and email alerts</div></div>
+      </div>
+      <div class="flow-note"><strong>Example:</strong> Incident created → Automation Rule fires → Playbook runs → Azure AD account disabled + SOC notified via Teams — all within seconds, no human needed.</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-connector">
+  <div class="arrow-label">outputs delivered to</div>
+  <div class="arrow-line" style="--from-color:var(--c5);--to-color:var(--c6)"></div>
+  <div class="arrow-chevron" style="color:var(--c6)">▼</div>
+</div>
+
+<div class="layer">
+  <div class="layer-inner" style="--accent:var(--c6)" onclick="toggle(this)">
+    <div class="layer-head">
+      <span class="layer-num">06</span>
+      <div><div class="layer-title">OUTPUTS</div><div class="layer-subtitle">Where the results of SOC work land</div></div>
+      <span class="layer-toggle">▾</span>
+    </div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card"><div class="card-icon">🖥️</div><div class="card-name">SOC Dashboard</div><div class="card-desc">Real-time incident queue, analyst workload, alert trends</div></div>
+        <div class="card"><div class="card-icon">🔔</div><div class="card-name">Alerts and Emails</div><div class="card-desc">Automated notifications to analysts, managers, on-call teams</div></div>
+        <div class="card"><div class="card-icon">🎫</div><div class="card-name">ITSM / ServiceNow</div><div class="card-desc">Incidents pushed to ticketing systems for tracking and SLA management</div></div>
+        <div class="card"><div class="card-icon">📈</div><div class="card-name">Reports and Metrics</div><div class="card-desc">MTTD, MTTR, false positive rate, coverage dashboards for leadership</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div style="font-size:10px;color:var(--muted);font-family:'IBM Plex Mono',monospace;letter-spacing:.12em;align-self:center;margin-right:4px">LAYERS:</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c1)"></div>Log Sources</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c2)"></div>Data Connectors</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c3)"></div>Log Analytics Workspace</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c4)"></div>Microsoft Sentinel</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c5)"></div>Response and Automation</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--c6)"></div>Outputs</div>
+</div>
+
+</main>
+<footer>Microsoft Sentinel Data Hierarchy &nbsp;·&nbsp; azure-sentinel-soc &nbsp;·&nbsp; github.com</footer>
+<script>
+  function toggle(el){ el.classList.toggle('open'); }
+  document.querySelector('.layer-inner').classList.add('open');
+</script>
+</body>
+</html>
