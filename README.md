@@ -9,14 +9,14 @@
 ### 1. Sentinel Full Architecture Map
 A complete interactive map of every component in Microsoft Sentinel — from log sources through data connectors, Log Analytics Workspace, the SIEM layer, and response automation.
 
-🔗 **[View Live Diagram →](kaur2avinash.github.io/azure-sentinel-soc/diagrams/sentinel-diagram.html)**
+🔗 **[View Live Diagram →](https://kaur2avinash.github.io/azure-sentinel-soc/diagrams/sentinel-diagram.html)**
 
 ---
 
 ### 2. Sentinel Data Hierarchy
 A visual breakdown of how data flows through the Sentinel stack — from raw log sources all the way to incidents and automated response. Covers where each component sits and how they connect.
 
-🔗 **[View Live Diagram →](kaur2avinash.github.io/azure-sentinel-soc/diagrams/sentinel-hierarchy.html)**
+🔗 **[View Live Diagram →](https://kaur2avinash.github.io/azure-sentinel-soc/diagrams/sentinel-hierarchy.html)**
 
 ---
 
