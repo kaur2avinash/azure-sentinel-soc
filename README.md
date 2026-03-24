@@ -19,6 +19,11 @@ A visual breakdown of how data flows through the Sentinel stack — from raw log
 🔗 **[View Live Diagram →](https://kaur2avinash.github.io/azure-sentinel-soc/diagrams/sentinel-hierarchy.html)**
 
 ---
+### 3. Azure Services by category
+A self-contained HTML reference sheet covering Microsoft Azure core services grouped by category — IaaS, PaaS, FaaS, SaaS, Storage, and Identity & Security. Built as a study aid for anyone learning Azure fundamentals.
+
+🔗 **[View Live Diagram →](https://kaur2avinash.github.io/azure-sentinel-soc/diagrams/azure-900-cheatsheet.html)**
+
 
 ## 🗂️ Repository Structure
 
@@ -28,6 +33,7 @@ azure-sentinel-soc/
 ├── diagrams/
 │   ├── sentinel-architecture.html   ← Full component map (interactive)
 │   └── sentinel-hierarchy.html      ← Data flow hierarchy (interactive)
+|   └── azure sevices by category    ← Azure Services Category wise (Iaas, Paas, Saas)
 │
 ├── kql-queries/                     ← coming soon
 ├── analytics-rules/                 ← coming soon
