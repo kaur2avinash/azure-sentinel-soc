@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AZ-900 Azure Services Cheatsheet</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --border: #1e2d45;
+    --azure: #0078d4;
+    --azure-light: #50a8f5;
+    --iaas: #f59e0b;
+    --paas: #10b981;
+    --faas: #8b5cf6;
+    --saas: #ef4444;
+    --storage: #06b6d4;
+    --identity: #f97316;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    padding: 48px 32px;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,120,212,0.15), transparent),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,45,69,0.3) 39px, rgba(30,45,69,0.3) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(30,45,69,0.3) 39px, rgba(30,45,69,0.3) 40px);
+  }
+
+  .wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 48px;
+    border-left: 4px solid var(--azure);
+    padding-left: 20px;
+    animation: fadeIn 0.6s ease both;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--azure-light);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  h1 span {
+    color: var(--azure-light);
+  }
+
+  .subtitle {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    animation: slideUp 0.5s ease both;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.15s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+  .card:nth-child(4) { animation-delay: 0.25s; }
+  .card:nth-child(5) { animation-delay: 0.3s; }
+  .card:nth-child(6) { animation-delay: 0.35s; }
+
+  .card-header {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+
+  .card-title {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .card-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-left: auto;
+    letter-spacing: 0.05em;
+  }
+
+  .responsibility {
+    padding: 10px 18px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .responsibility span {
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  tr {
+    border-bottom: 1px solid rgba(30,45,69,0.6);
+    transition: background 0.15s ease;
+  }
+
+  tr:last-child { border-bottom: none; }
+
+  tr:hover { background: rgba(255,255,255,0.03); }
+
+  td {
+    padding: 9px 18px;
+    font-size: 12px;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  td:first-child {
+    color: #fff;
+    font-weight: 700;
+    width: 52%;
+    white-space: nowrap;
+  }
+
+  td:last-child {
+    color: var(--muted);
+    font-size: 11px;
+    border-left: 1px solid var(--border);
+  }
+
+  /* Color themes per card */
+  .iaas .card-header { border-left: 3px solid var(--iaas); }
+  .iaas .badge { background: rgba(245,158,11,0.15); color: var(--iaas); }
+  .iaas td:first-child { color: #fcd34d; }
+
+  .paas .card-header { border-left: 3px solid var(--paas); }
+  .paas .badge { background: rgba(16,185,129,0.15); color: var(--paas); }
+  .paas td:first-child { color: #6ee7b7; }
+
+  .faas .card-header { border-left: 3px solid var(--faas); }
+  .faas .badge { background: rgba(139,92,246,0.15); color: var(--faas); }
+  .faas td:first-child { color: #c4b5fd; }
+
+  .saas .card-header { border-left: 3px solid var(--saas); }
+  .saas .badge { background: rgba(239,68,68,0.15); color: var(--saas); }
+  .saas td:first-child { color: #fca5a5; }
+
+  .storage .card-header { border-left: 3px solid var(--storage); }
+  .storage .badge { background: rgba(6,182,212,0.15); color: var(--storage); }
+  .storage td:first-child { color: #67e8f9; }
+
+  .identity .card-header { border-left: 3px solid var(--identity); }
+  .identity .badge { background: rgba(249,115,22,0.15); color: var(--identity); }
+  .identity td:first-child { color: #fdba74; }
+
+  /* Summary bar */
+  .summary {
+    margin-top: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    animation: fadeIn 0.6s 0.5s ease both;
+  }
+
+  .summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .summary-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .summary-value {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .divider {
+    width: 1px;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  .tip-box {
+    margin-top: 20px;
+    border: 1px solid rgba(0,120,212,0.3);
+    background: rgba(0,120,212,0.05);
+    border-radius: 4px;
+    padding: 16px 20px;
+    font-size: 12px;
+    color: var(--muted);
+    animation: fadeIn 0.6s 0.6s ease both;
+  }
+
+  .tip-box strong {
+    color: var(--azure-light);
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--display);
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+
+  .tip-box ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 32px;
+  }
+
+  .tip-box li::before { content: "→ "; color: var(--azure); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  footer {
+    margin-top: 32px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    animation: fadeIn 0.6s 0.7s ease both;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="eyebrow">Microsoft Azure — AZ-900 Exam Reference</div>
+    <h1>Azure Services<br><span>by Category</span></h1>
+    <div class="subtitle">// IaaS · PaaS · FaaS · SaaS · Storage · Identity & Security</div>
+  </header>
+
+  <div class="grid">
+
+    <!-- IaaS -->
+    <div class="card iaas">
+      <div class="card-header">
+        <span class="badge">IaaS</span>
+        <span class="card-title">Infrastructure as a Service</span>
+      </div>
+      <div class="responsibility">You manage: <span>OS · Runtime · Apps</span> &nbsp;|&nbsp; Azure manages: <span>Hardware · Network · Virtualization</span></div>
+      <table>
+        <tr><td>Virtual Machines</td><td>Full VMs — Windows or Linux</td></tr>
+        <tr><td>VM Scale Sets</td><td>Auto-scaling group of VMs</td></tr>
+        <tr><td>Virtual Network (VNet)</td><td>Private network in Azure</td></tr>
+        <tr><td>Disk Storage</td><td>Block storage for VMs</td></tr>
+        <tr><td>Azure Bastion</td><td>Secure VM access, no public IP</td></tr>
+        <tr><td>Load Balancer</td><td>Distributes traffic across VMs</td></tr>
+      </table>
+    </div>
+
+    <!-- PaaS -->
+    <div class="card paas">
+      <div class="card-header">
+        <span class="badge">PaaS</span>
+        <span class="card-title">Platform as a Service</span>
+      </div>
+      <div class="responsibility">You manage: <span>Apps · Data</span> &nbsp;|&nbsp; Azure manages: <span>OS · Runtime · Infra</span></div>
+      <table>
+        <tr><td>App Service</td><td>Host web apps, REST APIs</td></tr>
+        <tr><td>Azure SQL Database</td><td>Managed relational database</td></tr>
+        <tr><td>AKS</td><td>Managed Kubernetes</td></tr>
+        <tr><td>Container Instances</td><td>Run containers, no servers</td></tr>
+        <tr><td>Cosmos DB</td><td>Managed NoSQL database</td></tr>
+        <tr><td>Cache for Redis</td><td>Managed in-memory caching</td></tr>
+        <tr><td>API Management</td><td>Publish and manage APIs</td></tr>
+        <tr><td>Service Bus</td><td>Managed message queuing</td></tr>
+        <tr><td>Event Hub</td><td>Big data streaming pipeline</td></tr>
+        <tr><td>Logic Apps</td><td>Low-code workflow automation</td></tr>
+      </table>
+    </div>
+
+    <!-- FaaS -->
+    <div class="card faas">
+      <div class="card-header">
+        <span class="badge">FaaS</span>
+        <span class="card-title">Functions / Serverless</span>
+      </div>
+      <div class="responsibility">You manage: <span>Code Only</span> &nbsp;|&nbsp; Azure manages: <span>Everything Else</span></div>
+      <table>
+        <tr><td>Azure Functions</td><td>Event-driven serverless execution</td></tr>
+        <tr><td>Logic Apps</td><td>Serverless workflow automation</td></tr>
+        <tr><td>Event Grid</td><td>Serverless event routing</td></tr>
+      </table>
+    </div>
+
+    <!-- SaaS -->
+    <div class="card saas">
+      <div class="card-header">
+        <span class="badge">SaaS</span>
+        <span class="card-title">Software as a Service</span>
+      </div>
+      <div class="responsibility">You manage: <span>Nothing</span> &nbsp;|&nbsp; Just use the software</div>
+      <table>
+        <tr><td>Microsoft 365</td><td>Word, Excel, Teams, Outlook</td></tr>
+        <tr><td>Dynamics 365</td><td>CRM & ERP software</td></tr>
+        <tr><td>Microsoft Intune</td><td>Device management</td></tr>
+        <tr><td>Azure DevOps</td><td>CI/CD pipelines, boards, repos</td></tr>
+        <tr><td>Power BI</td><td>Business intelligence dashboards</td></tr>
+      </table>
+    </div>
+
+    <!-- Storage -->
+    <div class="card storage">
+      <div class="card-header">
+        <span class="badge">Storage</span>
+        <span class="card-title">Storage Services</span>
+        <span class="card-sub">IaaS / PaaS</span>
+      </div>
+      <div class="responsibility">Azure-managed storage solutions for all data types</div>
+      <table>
+        <tr><td>Blob Storage</td><td>Unstructured objects (images, backups)</td></tr>
+        <tr><td>File Storage</td><td>Managed file shares (SMB)</td></tr>
+        <tr><td>Queue Storage</td><td>Message queuing for apps</td></tr>
+        <tr><td>Table Storage</td><td>NoSQL key-value store</td></tr>
+        <tr><td>Data Lake Storage</td><td>Big data analytics storage</td></tr>
+      </table>
+    </div>
+
+    <!-- Identity & Security -->
+    <div class="card identity">
+      <div class="card-header">
+        <span class="badge">Security</span>
+        <span class="card-title">Identity & Security</span>
+      </div>
+      <div class="responsibility">Authentication, authorization, and threat protection services</div>
+      <table>
+        <tr><td>Microsoft Entra ID</td><td>Identity & access management (IAM)</td></tr>
+        <tr><td>Azure Key Vault</td><td>Secrets, keys, certificates</td></tr>
+        <tr><td>Defender for Cloud</td><td>Security posture & threat protection</td></tr>
+        <tr><td>Microsoft Sentinel</td><td>SIEM — security event monitoring</td></tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-item">
+      <span class="summary-label">Total Services</span>
+      <span class="summary-value">33</span>
+    </div>
+    <div class="divider"></div>
+    <div class="summary-item">
+      <span class="summary-label">Categories</span>
+      <span class="summary-value">6</span>
+    </div>
+    <div class="divider"></div>
+    <div class="summary-item">
+      <span class="summary-label">Most Control</span>
+      <span class="summary-value" style="color:var(--iaas)">IaaS</span>
+    </div>
+    <div class="divider"></div>
+    <div class="summary-item">
+      <span class="summary-label">Least Control</span>
+      <span class="summary-value" style="color:var(--saas)">SaaS</span>
+    </div>
+  </div>
+
+  <!-- Exam Tip -->
+  <div class="tip-box">
+    <strong>⚡ AZ-900 Exam Tips</strong>
+    <ul>
+      <li>IaaS = most control, most responsibility</li>
+      <li>PaaS = focus on code & data only</li>
+      <li>FaaS = write functions, Azure handles the rest</li>
+      <li>SaaS = just log in and use it</li>
+      <li>Spot VMs = cheapest, but can be evicted anytime</li>
+      <li>Reservations = 1-3 year commit = up to 72% off</li>
+    </ul>
+  </div>
+
+  <footer>Microsoft Azure Fundamentals</footer>
+
+</div>
+</body>
+</html>
